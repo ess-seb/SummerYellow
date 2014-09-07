@@ -4,7 +4,7 @@ class Tri {
   int edit_mode = 0;
   int tolerance = 5;
   int nCorner = 0;
-
+//
   int ofs = 400;
 
   boolean mlocked = false;
