@@ -19,9 +19,10 @@ int pixDim;
 
 
 
+
 Capture video;
 OpenCV opencv;
-PImage tex, tex2, frame, frameMem, diffImg;
+PImage tex, tex2, frame, frameMem, diffImg, texImg;
 
 PFont myFont;
 
@@ -30,6 +31,8 @@ ControlP5 controlP5;
 float funVolume = -10;
 float chillVolume = -10;
 int blur = 10;
+int tresh = 74;
+boolean showPanel = true, tTex = true, fTex = true;
 AudioPlayer player_fun;
 AudioPlayer player_chill;
 Minim minim;
@@ -37,12 +40,12 @@ Minim minim;
 
 void setup() {
 
-  tex2 = loadImage("fto.jpg"); 
+  tex2 = loadImage("trafalgar_square.jpg");
+  texImg = createImage(640/2, 480/2, RGB); 
 
   size( 1280, 800, P2D);
   noSmooth();
   background(0);
-  stroke(153);
   frameRate(20);
 
 
@@ -67,27 +70,46 @@ void setup() {
   player_fun.setGain(-10);
   player_fun.play();
   player_fun.loop(100);
-  player_chill = minim.loadFile("chill2.wav", 1024);
+  player_chill = minim.loadFile("chill.wav", 1024);
   player_chill.setGain(-10);
   player_chill.play();
   player_chill.loop(100);
 
   controlP5 = new ControlP5(this);
-  controlP5.addSlider("deadTime", 0, 25, 8, 10, 130, 100, 12).setNumberOfTickMarks(26);
-  controlP5.addSlider("blur", 1, 30, 10, 10, 210, 100, 12);
-  controlP5.addSlider("funVolume", -60, 6, -10, 10, 170, 100, 12);
-  controlP5.addSlider("chillVolume", -60, 6, -10, 10, 190, 100, 12);
+  Group g1 = controlP5.addGroup("SETUP").setPosition(800, 20);
+  controlP5.addSlider("deadTime", 0, 25, 8, 0, 120, 100, 12)
+    .setNumberOfTickMarks(26)
+    .setGroup(g1);
+  controlP5.addSlider("blur", 1, 30, 10, 0, 40, 100, 12)
+    .setGroup(g1);
+  controlP5.addSlider("tresh", 1, 255, 74, 0, 60, 100, 12)
+    .setGroup(g1);
+  controlP5.addSlider("funVolume", -60, 6, -10, 0, 80, 100, 12)
+    .setGroup(g1);
+  controlP5.addSlider("chillVolume", -60, 6, -10, 0, 100, 100, 12)
+    .setGroup(g1);
+  controlP5.addTextlabel("showP", "To show/hide GUI push the SPACE key", 0, 10)
+    .setGroup(g1);
+  controlP5.addToggle("tTex", true, 0, 150, 24, 12)
+   .setGroup(g1); 
+  controlP5.addToggle("fTex", true, 36, 150, 24, 12)
+   .setGroup(g1); 
 
   //    https://github.com/atduskgreg/opencv-processing/blob/master/examples/BackgroundSubtraction/BackgroundSubtraction.pde
 }
 
 void draw() {
+  background(0);
   getFrame(opencv, video);
-  image( opencv.getSnapshot(), 0, 0 );
-
+  if (showPanel) {
+    image( opencv.getSnapshot(), 0, 0 );
+    image( diffImg, diffImg.width, 0 );
+    image( texImg, 0, texImg.height);
+  }
+  
+  texImg = getMovement(opencv, video);
   if (timer >= deadTime) {
     diffImg = getMovement(opencv, video);
-    image( diffImg, 300, 0 );
     timer = 0; 
   }
   timer++;
@@ -102,12 +124,10 @@ void draw() {
       diffPixels++;
     }
   }
-  print(diffPixels + "/" + diffMax + "\n");
   
     motionRatio = (float)diffPixels/motionSize;
-   //println("motionRatio" + motionRatio + " chillLevel:" + chillLevel + " funLevel:" + funLevel);
    
-   if (motionRatio>=0.05 && funLevel<100) funLevel+=2;
+   if (motionRatio>=0.05 && funLevel<100) funLevel+=3;
    if (motionRatio<0.05 && funLevel>0) funLevel-=1;
    
    if (funLevel>50 && chillLevel>0) chillLevel-=3;
@@ -118,7 +138,7 @@ void draw() {
    
    
    myTri.setBrightness(funLevel/100);
-//   myTri.display(tex);
+   myTri.display(tex2, diffImg, showPanel, fTex, tTex);
    player_fun.setGain(((funLevel/100*66)-60));
    player_chill.setGain(((chillLevel/100*66)-60));
    
@@ -141,17 +161,23 @@ PImage getMovement(OpenCV opencv, Capture video) {
   PImage diff;
   frame = getFrame(opencv, video);
   opencv.diff(frameMem);
-  opencv.threshold(40);
+  opencv.threshold(tresh);
   diff = opencv.getSnapshot();
   frameMem = getFrame(opencv, video);
-  print("Yo");
   return diff;
 }
 
 
 void keyPressed() {
-
-  getFrame(opencv, video);  // store the actual image in memory
+  if (key == ' ') {
+    showPanel = !showPanel;
+    
+    if (showPanel) {
+      controlP5.show();
+    } else if (!showPanel) {
+      controlP5.hide();
+    }
+  }
 }
 
 void controlEvent(ControlEvent theControlEvent)

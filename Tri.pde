@@ -4,28 +4,31 @@ class Tri {
   int edit_mode = 0;
   int tolerance = 5;
   int nCorner = 0;
-//
   int ofs = 400;
 
-  boolean mlocked = false;
-  int[][] tD = {
-    {
-      -101+ofs, -58+ofs
-    }
-    , {
-      101+ofs, -58+ofs
-    }
-    , {
-      0+ofs, 0+ofs
-    }
-    , {
-      116+ofs, 0+ofs
-    }
-  };
-  PImage tex2 = loadImage("fto.jpg"); 
   PImage img;
 
-  // The Constructor is defined with arguments.
+  boolean mlocked = false;
+  float[][] tD = {
+    {
+      0+ofs, 0+ofs, 0.5, 0.5
+    }
+    , {
+      -200+ofs, 100+ofs, 0.0, 1.0
+    }
+    , {
+      200+ofs, 100+ofs, 1.0, 1.0
+    }
+    , {
+      0+ofs, -100+ofs, 0.5, 0.0
+    }
+    , {
+      -200+ofs, 100+ofs, 0.0, 1.0
+    }
+  };
+  
+  
+
   Tri(PImage tex) { 
     colorMode(HSB, 360, 100, 100);
     myColor = color(110, 100, 100);
@@ -33,21 +36,23 @@ class Tri {
     img = createImage(tex.width, tex.height, RGB);
   }
 
-  void display(PImage tex) {
+  void display(PImage texImg, PImage texTre, Boolean showPanel, boolean fTex, boolean tTex) {
     img.loadPixels();
     for (int i = 0; i < img.pixels.length; i++) {
       img.pixels[i] = myColor;
     }
+    
     img.updatePixels();
-    img.blend(tex, 0, 0, tex.height, tex.width, 0, 0, tex.height, tex.width, OVERLAY);
-    //img.blend(tex2, 0, 0, tex2.height, tex2.width, 0, 0, tex2.height, tex2.width, OVERLAY);
-    stroke(153);
-    //fill(myColor);
-    //textureMode(NORMALIZED);
+    if (fTex) img.blend(texImg, 0, 0, texImg.width, texImg.height, 0, 0, img.width, img.height, OVERLAY);
+    if (tTex) img.blend(texTre, 0, 0, texTre.width, tex.height, 0, 0, img.width, img.height, OVERLAY);
+    
+    if (showPanel) stroke(153);
+    else noStroke();
+
     beginShape(TRIANGLE_FAN);
     texture(img);
-    for (int p = 0; p < tD.length; p++) {
-      vertex(tD[p][0], tD[p][1], tD[p][2], tD[p][3]);
+    for (float[] pt : tD) {
+      vertex(pt[0], pt[1], pt[2]*img.width, pt[3]*img.height);
     }
     endShape(CLOSE);
 
