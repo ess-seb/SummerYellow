@@ -40,8 +40,6 @@ Minim minim;
 
 void setup() {
 
-  tex2 = loadImage("trafalgar_square.jpg");
-  texImg = createImage(640/2, 480/2, RGB); 
 
   size( 1280, 800, P2D);
   noSmooth();
@@ -61,7 +59,8 @@ void setup() {
   opencv.loadImage(frameMem);
 
   motionSize = opencv.width*opencv.height;
-  tex = new PImage(opencv.width, opencv.height);
+  tex = loadImage("360-panorama.jpg");
+  texImg = new PImage(opencv.width, opencv.height);
 
   myTri = new Tri(tex);
 
@@ -107,7 +106,6 @@ void draw() {
     image( texImg, 0, texImg.height);
   }
   
-  texImg = getMovement(opencv, video);
   if (timer >= deadTime) {
     diffImg = getMovement(opencv, video);
     timer = 0; 
@@ -125,6 +123,9 @@ void draw() {
     }
   }
   
+  
+  texImg = getTexture(opencv);
+  
     motionRatio = (float)diffPixels/motionSize;
    
    if (motionRatio>=0.05 && funLevel<100) funLevel+=3;
@@ -133,12 +134,11 @@ void draw() {
    if (funLevel>50 && chillLevel>0) chillLevel-=3;
    if (funLevel<=50 && chillLevel<100) chillLevel+=3;
    
-   tex.pixels = diffImg.pixels;
-   tex.updatePixels();
+   
    
    
    myTri.setBrightness(funLevel/100);
-   myTri.display(tex2, diffImg, showPanel, fTex, tTex);
+   myTri.display(tex, texImg, showPanel, fTex, tTex);
    player_fun.setGain(((funLevel/100*66)-60));
    player_chill.setGain(((chillLevel/100*66)-60));
    
@@ -166,6 +166,13 @@ PImage getMovement(OpenCV opencv, Capture video) {
   frameMem = getFrame(opencv, video);
   return diff;
 }
+
+PImage getTexture(OpenCV opencv) {
+  opencv.loadImage(frame);
+  opencv.threshold(tresh);
+  opencv.blur(150);
+  return opencv.getSnapshot();
+}  
 
 
 void keyPressed() {
