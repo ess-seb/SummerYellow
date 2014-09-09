@@ -18,11 +18,10 @@ float funThreshold = 0.1;
 int pixDim;
 
 
-
-
 Capture video;
 OpenCV opencv;
-PImage tex, tex2, frame, frameMem, diffImg, texImg;
+PImage texFile, frame, frameMem, diffImg, leafImg;
+ArrayList<PImage> texLayers = new ArrayList<PImage>();
 
 PFont myFont;
 
@@ -32,7 +31,7 @@ float funVolume = -10;
 float chillVolume = -10;
 int blur = 10;
 int tresh = 74;
-boolean showPanel = true, tTex = true, fTex = true;
+boolean showPanel = true, tTex = true, fTex = false, lTex = false, diffTex = false;
 AudioPlayer player_fun;
 AudioPlayer player_chill;
 Minim minim;
@@ -41,7 +40,7 @@ Minim minim;
 void setup() {
 
 
-  size( 1280, 800, P2D);
+  size( 1280, 800, P3D);
   noSmooth();
   background(0);
   frameRate(20);
@@ -54,15 +53,15 @@ void setup() {
   video = new Capture(this, 640/2, 480/2);
   video.start();
   opencv.loadImage(video);
+  leafImg = getFrame(opencv, video);
   frameMem = getFrame(opencv, video);
   diffImg = getMovement(opencv, video);
   opencv.loadImage(frameMem);
 
   motionSize = opencv.width*opencv.height;
-  tex = loadImage("360-panorama.jpg");
-  texImg = new PImage(opencv.width, opencv.height);
+  texFile = loadImage("texture.jpg");
 
-  myTri = new Tri(tex);
+  myTri = new Tri(640/2, 480/2);
 
   minim = new Minim(this);
   player_fun = minim.loadFile("fun.wav", 1024);
@@ -91,7 +90,11 @@ void setup() {
     .setGroup(g1);
   controlP5.addToggle("tTex", true, 0, 150, 24, 12)
    .setGroup(g1); 
-  controlP5.addToggle("fTex", true, 36, 150, 24, 12)
+  controlP5.addToggle("fTex", false, 36, 150, 24, 12)
+   .setGroup(g1);
+  controlP5.addToggle("lTex", false, 72, 150, 24, 12)
+   .setGroup(g1);
+  controlP5.addToggle("diffTex", false, 108, 150, 24, 12)
    .setGroup(g1); 
 
   //    https://github.com/atduskgreg/opencv-processing/blob/master/examples/BackgroundSubtraction/BackgroundSubtraction.pde
@@ -103,7 +106,6 @@ void draw() {
   if (showPanel) {
     image( opencv.getSnapshot(), 0, 0 );
     image( diffImg, diffImg.width, 0 );
-    image( texImg, 0, texImg.height);
   }
   
   if (timer >= deadTime) {
@@ -124,7 +126,6 @@ void draw() {
   }
   
   
-  texImg = getTexture(opencv);
   
     motionRatio = (float)diffPixels/motionSize;
    
@@ -134,11 +135,25 @@ void draw() {
    if (funLevel>50 && chillLevel>0) chillLevel-=3;
    if (funLevel<=50 && chillLevel<100) chillLevel+=3;
    
+   texLayers.clear();
+   if (fTex) texLayers.add(texFile);
+   if (tTex) {
+     PImage imgTex = getTexture(opencv, video);
+     texLayers.add(imgTex);
+     if (showPanel) image( imgTex, 0, imgTex.height);
+   }
    
+   if (lTex) {
+     PImage imgTex = getLeafTexture(opencv, video);
+     texLayers.add(imgTex);
+     if (showPanel) image( imgTex, 0, imgTex.height*2);
+   }
+   
+   if (diffTex) texLayers.add(diffImg);
    
    
    myTri.setBrightness(funLevel/100);
-   myTri.display(tex, texImg, showPanel, fTex, tTex);
+   myTri.display(texLayers, showPanel);
    player_fun.setGain(((funLevel/100*66)-60));
    player_chill.setGain(((chillLevel/100*66)-60));
    
@@ -167,11 +182,20 @@ PImage getMovement(OpenCV opencv, Capture video) {
   return diff;
 }
 
-PImage getTexture(OpenCV opencv) {
-  opencv.loadImage(frame);
+PImage getTexture(OpenCV opencv, Capture video) {
+  opencv.loadImage(video);
   opencv.threshold(tresh);
   opencv.blur(150);
   return opencv.getSnapshot();
+}
+
+PImage getLeafTexture(OpenCV opencv, Capture video) {
+  opencv.loadImage(video);
+  PImage addImg = opencv.getSnapshot();
+  addImg.filter(BLUR, 6);
+  addImg.filter(THRESHOLD, 50);
+  leafImg.blend(addImg, 0, 0, addImg.width, addImg.height, 0, 0, leafImg.width, leafImg.height, BLEND);
+  return leafImg;
 }  
 
 

@@ -11,40 +11,41 @@ class Tri {
   boolean mlocked = false;
   float[][] tD = {
     {
-      0+ofs, 0+ofs, 0.5, 0.5
+      0+ofs, -67+ofs, 0.5, 0.36
     }
     , {
-      -200+ofs, 100+ofs, 0.0, 1.0
+      -231+ofs, -200+ofs, 0.0, 0.0
     }
     , {
-      200+ofs, 100+ofs, 1.0, 1.0
+      231+ofs, -200+ofs, 1.0, 0.0
     }
     , {
-      0+ofs, -100+ofs, 0.5, 0.0
+      0+ofs, 200+ofs, 0.5, 1
     }
     , {
-      -200+ofs, 100+ofs, 0.0, 1.0
+      -231+ofs, -200+ofs, 0.0, 0.0
     }
   };
   
   
 
-  Tri(PImage tex) { 
+  Tri(int w, int h) { 
     colorMode(HSB, 360, 100, 100);
     myColor = color(110, 100, 100);
     cornerColor = color(205, 90, 100);
-    img = createImage(tex.width, tex.height, RGB);
+    img = createImage(w, h, RGB);
   }
 
-  void display(PImage texImg, PImage texTre, Boolean showPanel, boolean fTex, boolean tTex) {
+  void display(ArrayList<PImage> layers, Boolean showPanel) {
     img.loadPixels();
     for (int i = 0; i < img.pixels.length; i++) {
       img.pixels[i] = myColor;
     }
-    
     img.updatePixels();
-    if (fTex) img.blend(texImg, 0, 0, texImg.width, texImg.height, 0, 0, img.width, img.height, OVERLAY);
-    if (tTex) img.blend(texTre, 0, 0, texTre.width, tex.height, 0, 0, img.width, img.height, OVERLAY);
+    
+    for (PImage layer : layers) {
+      img.blend(layer, 0, 0, layer.width, layer.height, 0, 0, img.width, img.height, OVERLAY);
+    }
     
     if (showPanel) stroke(153);
     else noStroke();
