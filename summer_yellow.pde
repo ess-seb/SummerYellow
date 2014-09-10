@@ -6,11 +6,14 @@ import ddf.minim.*;  //p5
 
 Tri myTri;
 
-int timer = 0;
-int deadTime = 1;
+int timer = 0, deadTime = 1;
 int motionSize = 0;
 int diffPixels = 0, diffMax = 0;
 float motionRatio = 0;
+
+//leaf texture
+float incLeaf = 20, noiseBaseLeaf = 0, tempoLeaf = 34, detailLeaf = 30;
+boolean thresLeaf = true;
 
 float funLevel = 0;
 float chillLevel = 0;
@@ -27,13 +30,10 @@ PFont myFont;
 
 ControlP5 controlP5;
 
-float funVolume = -10;
-float chillVolume = -10;
-int blur = 10;
-int tresh = 74;
-boolean showPanel = true, tTex = true, fTex = false, lTex = false, diffTex = false;
-AudioPlayer player_fun;
-AudioPlayer player_chill;
+float funVolume = -10, chillVolume = -10;
+int blur = 10, tresh = 74;
+boolean showPanel = true, tTex = false, fTex = false, lTex = true, diffTex = false;
+AudioPlayer player_fun, player_chill;
 Minim minim;
 
 
@@ -88,20 +88,33 @@ void setup() {
     .setGroup(g1);
   controlP5.addTextlabel("showP", "To show/hide GUI push the SPACE key", 0, 10)
     .setGroup(g1);
-  controlP5.addToggle("tTex", true, 0, 150, 24, 12)
+  controlP5.addToggle("tTex", false, 0, 150, 24, 12)
    .setGroup(g1); 
   controlP5.addToggle("fTex", false, 36, 150, 24, 12)
    .setGroup(g1);
-  controlP5.addToggle("lTex", false, 72, 150, 24, 12)
+  controlP5.addToggle("lTex", true, 72, 150, 24, 12)
    .setGroup(g1);
   controlP5.addToggle("diffTex", false, 108, 150, 24, 12)
    .setGroup(g1); 
-
-  //    https://github.com/atduskgreg/opencv-processing/blob/master/examples/BackgroundSubtraction/BackgroundSubtraction.pde
+   
+  Group gLeaf = controlP5.addGroup("LeafTexture")
+    .setPosition(200, 20)
+    .setGroup(g1);
+  controlP5.addSlider("incLeaf", 0, 100, 5, 0, 40, 100, 12)
+    .setGroup(gLeaf);
+  controlP5.addSlider("tempoLeaf", 0, 100, 30, 0, 60, 100, 12)
+    .setGroup(gLeaf);
+  controlP5.addSlider("detailLeaf", 0, 100, 80, 0, 80, 100, 12)
+    .setGroup(gLeaf);
+  controlP5.addToggle("thresLeaf", false, 0, 100, 24, 12)
+   .setGroup(gLeaf); 
+    
 }
 
+
+
 void draw() {
-  background(0);
+  println(frameRate);
   getFrame(opencv, video);
   if (showPanel) {
     image( opencv.getSnapshot(), 0, 0 );
@@ -111,6 +124,7 @@ void draw() {
   if (timer >= deadTime) {
     diffImg = getMovement(opencv, video);
     timer = 0; 
+    println(frameRate);
   }
   timer++;
 
@@ -144,12 +158,14 @@ void draw() {
    }
    
    if (lTex) {
-     PImage imgTex = getLeafTexture(opencv, video);
+     PImage imgTex = getLeafTexture(detailLeaf, tempoLeaf, incLeaf, thresLeaf);
      texLayers.add(imgTex);
-     if (showPanel) image( imgTex, 0, imgTex.height*2);
+     if (showPanel) image( imgTex, imgTex.width*2, imgTex.height*2);
    }
    
    if (diffTex) texLayers.add(diffImg);
+   
+
    
    
    myTri.setBrightness(funLevel/100);
@@ -189,13 +205,31 @@ PImage getTexture(OpenCV opencv, Capture video) {
   return opencv.getSnapshot();
 }
 
-PImage getLeafTexture(OpenCV opencv, Capture video) {
-  opencv.loadImage(video);
-  PImage addImg = opencv.getSnapshot();
-  addImg.filter(BLUR, 6);
-  addImg.filter(THRESHOLD, 50);
-  leafImg.blend(addImg, 0, 0, addImg.width, addImg.height, 0, 0, leafImg.width, leafImg.height, BLEND);
-  return leafImg;
+PImage getLeafTexture(float detail, float tempo, float inc, boolean thres) {
+  detail = map(detail, 0, 100, 0.5, 1);
+  tempo = map(tempo, 0, 100, 0.0, 0.05);
+  inc = map(inc, 0, 100, 0.0001, 0.008);
+  
+  PImage leafTex = createImage(640, 480, RGB);
+  leafTex.loadPixels();
+  
+  float xoff = 0.0;
+//  detail = map(mouseX, 0, width, 0.1, 0.6);
+  noiseDetail(4, detail);
+  
+  for (int x = 0; x < leafTex.width; x++) {
+    xoff += inc;
+    float yoff = 0.0;
+    for (int y = 0; y < leafTex.height; y++) {
+      yoff += inc;
+      float bright = noise(xoff, yoff, noiseBaseLeaf) * 255;
+      leafTex.pixels[x+y*leafTex.width] = color(bright);
+    }
+  }
+  leafTex.updatePixels();
+  noiseBaseLeaf += tempo;
+  if (thres) leafTex.filter(THRESHOLD);
+  return leafTex;
 }  
 
 
