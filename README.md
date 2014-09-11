@@ -1,4 +1,5 @@
-summer_yellow
+Summer Yellow
 =============
 
-a simple mapping and movement detection in processing
+A simple interactive (based on movement detection) mapping app written in processing.
+
