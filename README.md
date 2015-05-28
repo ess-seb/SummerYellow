@@ -1,5 +1,7 @@
 Summer Yellow
 =============
 
-A simple interactive (based on movement detection) mapping app written in processing.
+Interactive instalation dedicated to ”summer yellow” color-expirience promotion. A mapping app is written in processing and based on motion detection.
+
+Watch in action: https://vimeo.com/129098547
 
